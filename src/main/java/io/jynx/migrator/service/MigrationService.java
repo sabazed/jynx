@@ -1,0 +1,132 @@
+package io.jynx.migrator.service;
+
+
+import com.mongodb.client.result.InsertOneResult;
+import com.mongodb.reactivestreams.client.MongoClients;
+import com.mongodb.reactivestreams.client.MongoDatabase;
+import io.jynx.migrator.exception.MigrationException;
+import io.jynx.migrator.service.model.Migration;
+import io.jynx.migrator.util.DatabaseSubscriber;
+import io.jynx.migrator.util.MigrationFields;
+import io.jynx.migrator.util.MigrationHelper;
+import org.bson.Document;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
+import static com.mongodb.client.model.Sorts.ascending;
+import static io.jynx.migrator.service.model.Migration.VERSION_NAME_DELIMITER;
+
+
+@Service
+public class MigrationService {
+
+	public static final Logger logger = LoggerFactory.getLogger(MigrationService.class);
+	public static final String MIGRATION_VALIDATION_ERROR = "Exception occurred while validating migrations";
+	public static final String MIGRATION_MISMATCH_ERROR = "Invalid migrations present, database version mismatch with present migrations";
+	public static final String MIGRATION_CHECKSUM_ERROR = "Failed to validate migration checksum";
+	private static final String VERSIONS_COLLECTION = "jynx_version_history";
+
+	private final ConfigurationProvider config;
+	private final MongoDatabase database;
+
+	@Autowired
+	public MigrationService(ConfigurationProvider config) {
+		this.config = config;
+		this.database = MongoClients.create(config.getUrl()).getDatabase(config.getDatabase());
+	}
+
+	public void startMigrations() throws Throwable {
+		if (isDatabaseClean()) {
+			initializeVersionTable();
+		}
+		var location = new File(config.getLocation());
+		var migrations = Arrays.stream(location.listFiles()).toList();
+		processMigrations(migrations);
+	}
+
+	private boolean isDatabaseClean() {
+		try {
+			var collection = database.getCollection(VERSIONS_COLLECTION);
+			return collection != null;
+		} catch (Exception e) {
+			return false;
+		}
+	}
+
+	private void initializeVersionTable() throws Throwable {
+		var subscriber = new DatabaseSubscriber<Void>();
+		database.createCollection(VERSIONS_COLLECTION).subscribe(subscriber);
+		subscriber.await();
+	}
+
+	private void processMigrations(List<File> migrationFiles) throws Throwable {
+		var migrations = migrationFiles.stream()
+				.map(MigrationHelper::getMigration)
+				.sorted(Comparator.comparingInt(Migration::getVersion))
+				.toList();
+
+		var versionsCollection = database.getCollection(VERSIONS_COLLECTION);
+
+		var versionsSubscriber = new DatabaseSubscriber<Document>();
+		versionsCollection.find()
+				.sort(ascending(MigrationFields.VERSION.getName()))
+				.subscribe(versionsSubscriber);
+		versionsSubscriber.await();
+
+		var errors = versionsSubscriber.getErrors();
+		if (!errors.isEmpty()) {
+			errors.forEach(e -> logger.error(MIGRATION_VALIDATION_ERROR, e));
+			var e = errors.get(0);
+			throw new RuntimeException(e);
+		}
+
+		var received = versionsSubscriber.getReceived();
+		logger.debug("Applied migrations: {}", received);
+		if (received.size() > migrations.size()) {
+			throw new MigrationException(MIGRATION_MISMATCH_ERROR);
+		}
+
+		for (int i = 0; i < received.size(); i++) {
+			if (!MigrationHelper.matchMigrations(migrations.get(i), received.get(i))) {
+				throw new RuntimeException(String.format("%s: %s", MIGRATION_CHECKSUM_ERROR, migrations.get(i).getName()));
+			}
+		}
+		logger.info("Successfully validated all applied migrations [{}]", received.size());
+
+		var lastMigrationVersion = !received.isEmpty()
+				? received.get(received.size() - 1).getInteger(MigrationFields.VERSION.getName())
+				: -1;
+		var newMigrations = migrations.stream()
+				.filter(migration -> migration.getVersion().compareTo(lastMigrationVersion) > 0)
+				.toList();
+		DatabaseSubscriber<Document> migrationSubscriber;
+		DatabaseSubscriber<InsertOneResult> insertSubscriber;
+		for (var migration : newMigrations) {
+			migrationSubscriber = new DatabaseSubscriber<>();
+			database.runCommand(migration.getContent()).subscribe(migrationSubscriber);
+			migrationSubscriber.await();
+
+			insertSubscriber = new DatabaseSubscriber<>();
+			versionsCollection.insertOne(migration.toVersionEntry()).subscribe(insertSubscriber);
+			insertSubscriber.await();
+
+			logger.info("Successfully applied migration: {}{}{}", migration.getVersion(), VERSION_NAME_DELIMITER, migration.getName());
+		}
+		if (!newMigrations.isEmpty()) {
+			logger.info("{} new migrations have been applied", newMigrations.size());
+		}
+
+		var latestVersion = newMigrations.isEmpty() ? lastMigrationVersion : newMigrations.get(newMigrations.size() - 1).getVersion();
+		if (latestVersion > 0) {
+			logger.info("Your database is up do date, version - V{}", latestVersion);
+		}
+	}
+
+}

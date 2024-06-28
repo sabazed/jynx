@@ -1,0 +1,15 @@
+plugins {
+    id 'java'
+}
+
+group = 'io.jynx.migrator'
+version = '1.0'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.google.guava:guava:33.2.1-jre'
+    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive:3.3.1'
+}
