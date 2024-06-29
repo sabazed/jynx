@@ -26,10 +26,9 @@ Migration files should be named in the format: `Vx__migration_name.json`
 Add the following properties to your `application.properties` file to configure the application:
 
 ``` properties
-    # Migration
-    jynx.migrator.mongodb.url=mongodb://user:pass@localhost:port/db
-    jynx.migrator.mongodb.database=db
-    jynx.migrator.mongodb.location=src/main/resources/db/migration/mongo
+jynx.migrator.mongodb.url=mongodb://user:pass@localhost:port/db
+jynx.migrator.mongodb.database=db
+jynx.migrator.mongodb.location=src/main/resources/db/migration/mongo
 ```
 
 ## Usage
