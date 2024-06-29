@@ -98,7 +98,7 @@ public class MigrationService {
 				throw new RuntimeException(String.format("%s: %s", MIGRATION_CHECKSUM_ERROR, migrations.get(i).getName()));
 			}
 		}
-		logger.info("Successfully validated all applied migrations [{}]", received.size());
+		logger.info("Successfully validated {} migrations that were applied", received.size());
 
 		var lastMigrationVersion = !received.isEmpty()
 				? received.get(received.size() - 1).getInteger(MigrationFields.VERSION.getName())
