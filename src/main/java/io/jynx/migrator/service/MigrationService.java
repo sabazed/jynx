@@ -117,7 +117,7 @@ public class MigrationService {
 			versionsCollection.insertOne(migration.toVersionEntry()).subscribe(insertSubscriber);
 			insertSubscriber.await();
 
-			logger.info("Successfully applied migration: {}{}{}", migration.getVersion(), VERSION_NAME_DELIMITER, migration.getName());
+			logger.info("Successfully applied migration: V{}{}{}", migration.getVersion(), VERSION_NAME_DELIMITER, migration.getName());
 		}
 		if (!newMigrations.isEmpty()) {
 			logger.info("{} new migrations have been applied", newMigrations.size());
