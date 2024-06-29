@@ -53,9 +53,12 @@ public class MigrationService {
 
 	private boolean isDatabaseClean() {
 		try {
-			var collection = database.getCollection(VERSIONS_COLLECTION);
-			return collection != null;
-		} catch (Exception e) {
+			var subscriber = new DatabaseSubscriber<String>();
+			database.listCollectionNames()
+					.subscribe(subscriber);
+			subscriber.await();
+			return subscriber.getReceived().contains(VERSIONS_COLLECTION);
+		} catch (Throwable e) {
 			return false;
 		}
 	}
