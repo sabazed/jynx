@@ -28,9 +28,9 @@ import static io.jynx.migrator.service.model.Migration.VERSION_NAME_DELIMITER;
 public class MigrationService {
 
 	public static final Logger logger = LoggerFactory.getLogger(MigrationService.class);
-	public static final String MIGRATION_VALIDATION_ERROR = "Exception occurred while validating migrations";
-	public static final String MIGRATION_MISMATCH_ERROR = "Invalid migrations present, database version mismatch with present migrations";
-	public static final String MIGRATION_CHECKSUM_ERROR = "Failed to validate migration checksum: %s";
+	private static final String MIGRATION_VALIDATION_ERROR = "Exception occurred while validating migrations";
+	private static final String MIGRATION_MISMATCH_ERROR = "Invalid migrations present, database version mismatch with present migrations";
+	private static final String MIGRATION_CHECKSUM_ERROR = "Failed to validate migration checksum: %s";
 	private static final String VERSIONS_COLLECTION = "jynx_version_history";
 
 	private final ConfigurationProvider config;
