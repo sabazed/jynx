@@ -30,7 +30,7 @@ public class MigrationService {
 	public static final Logger logger = LoggerFactory.getLogger(MigrationService.class);
 	public static final String MIGRATION_VALIDATION_ERROR = "Exception occurred while validating migrations";
 	public static final String MIGRATION_MISMATCH_ERROR = "Invalid migrations present, database version mismatch with present migrations";
-	public static final String MIGRATION_CHECKSUM_ERROR = "Failed to validate migration checksum";
+	public static final String MIGRATION_CHECKSUM_ERROR = "Failed to validate migration checksum: %s";
 	private static final String VERSIONS_COLLECTION = "jynx_version_history";
 
 	private final ConfigurationProvider config;
@@ -95,7 +95,7 @@ public class MigrationService {
 
 		for (int i = 0; i < received.size(); i++) {
 			if (!MigrationHelper.matchMigrations(migrations.get(i), received.get(i))) {
-				throw new RuntimeException(String.format("%s: %s", MIGRATION_CHECKSUM_ERROR, migrations.get(i).getName()));
+				throw new RuntimeException(String.format(MIGRATION_CHECKSUM_ERROR, migrations.get(i).getName()));
 			}
 		}
 		logger.info("Successfully validated {} migrations that were applied", received.size());
