@@ -1,9 +1,13 @@
 plugins {
     id 'java'
+    id 'maven-publish'
 }
 
 group = 'io.jynx.migrator'
 version = '1.0'
+
+sourceCompatibility = 17
+targetCompatibility = 17
 
 repositories {
     mavenCentral()
@@ -12,4 +16,22 @@ repositories {
 dependencies {
     implementation 'com.google.guava:guava:33.2.1-jre'
     implementation 'org.springframework.boot:spring-boot-starter-data-mongodb-reactive:3.3.1'
+}
+
+java {
+    withSourcesJar()
+    withJavadocJar()
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
+}
+
+wrapper {
+    gradleVersion = "8.2"
+    distributionType = Wrapper.DistributionType.ALL
 }

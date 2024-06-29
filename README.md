@@ -36,6 +36,22 @@ jynx.migrator.mongodb.location=src/main/resources/db/migration/mongo
 1. **Add Migration Files:** Place your migration JSON files in the specified directory (`src/main/resources/db/migration/mongo`).
 2. **Run Application:** Start your Spring Boot application. The migrator will automatically execute the migrations in the correct order using the parameters defined in the JSON files with `db.runCommand()`.
 
+
+## Dependency
+
+To include Jynx Migrator in your project, add the following repository and dependency to your `build.gradle` file:
+```groovy
+repositories {
+    mavenCentral()
+    maven { url "https://jitpack.io" }
+}
+
+dependencies {
+    implementation 'com.github.sabazed:jynx:{version}'
+}
+```
+Use the release you wish to install instead of `version` 
+
 ## Important Notes
 
 - Each migration should contain valid parameters for a MongoDB `db.runCommand()` command.
