@@ -1,0 +1,31 @@
+{
+  "groups": [
+    {
+      "name": "jynx.migrator.mongodb",
+      "type": "io.jynx.migrator.service.ConfigurationProvider",
+      "sourceType": "io.jynx.migrator.service.ConfigurationProvider"
+    }
+  ],
+  "properties": [
+    {
+      "name": "jynx.migrator.mongodb.database",
+      "type": "java.lang.String",
+      "description": "Database which Jynx will apply migrations for",
+      "sourceType": "io.jynx.migrator.service.ConfigurationProvider"
+    },
+    {
+      "name": "jynx.migrator.mongodb.location",
+      "type": "java.lang.String",
+      "description": "Directory from the root where the migrations will be places",
+      "sourceType": "io.jynx.migrator.service.ConfigurationProvider",
+      "defaultValue": "src\/main\/resources\/db\/migration\/mongo"
+    },
+    {
+      "name": "jynx.migrator.mongodb.url",
+      "type": "java.lang.String",
+      "description": "Connection String to MongoDB including username, password and database where the user is created",
+      "sourceType": "io.jynx.migrator.service.ConfigurationProvider"
+    }
+  ],
+  "hints": []
+}
