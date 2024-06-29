@@ -28,9 +28,9 @@ import static io.jynx.migrator.service.model.Migration.VERSION_NAME_DELIMITER;
 public class MigrationService {
 
 	public static final Logger logger = LoggerFactory.getLogger(MigrationService.class);
-	public static final String MIGRATION_VALIDATION_ERROR = "Exception occurred while validating migrations";
-	public static final String MIGRATION_MISMATCH_ERROR = "Invalid migrations present, database version mismatch with present migrations";
-	public static final String MIGRATION_CHECKSUM_ERROR = "Failed to validate migration checksum";
+	private static final String MIGRATION_VALIDATION_ERROR = "Exception occurred while validating migrations";
+	private static final String MIGRATION_MISMATCH_ERROR = "Invalid migrations present, database version mismatch with present migrations";
+	private static final String MIGRATION_CHECKSUM_ERROR = "Failed to validate migration checksum: %s";
 	private static final String VERSIONS_COLLECTION = "jynx_version_history";
 
 	private final ConfigurationProvider config;
@@ -53,9 +53,12 @@ public class MigrationService {
 
 	private boolean isDatabaseClean() {
 		try {
-			var collection = database.getCollection(VERSIONS_COLLECTION);
-			return collection != null;
-		} catch (Exception e) {
+			var subscriber = new DatabaseSubscriber<String>();
+			database.listCollectionNames()
+					.subscribe(subscriber);
+			subscriber.await();
+			return subscriber.getReceived().contains(VERSIONS_COLLECTION);
+		} catch (Throwable e) {
 			return false;
 		}
 	}
@@ -95,10 +98,10 @@ public class MigrationService {
 
 		for (int i = 0; i < received.size(); i++) {
 			if (!MigrationHelper.matchMigrations(migrations.get(i), received.get(i))) {
-				throw new RuntimeException(String.format("%s: %s", MIGRATION_CHECKSUM_ERROR, migrations.get(i).getName()));
+				throw new RuntimeException(String.format(MIGRATION_CHECKSUM_ERROR, migrations.get(i).getName()));
 			}
 		}
-		logger.info("Successfully validated all applied migrations [{}]", received.size());
+		logger.info("Successfully validated {} migrations that were applied", received.size());
 
 		var lastMigrationVersion = !received.isEmpty()
 				? received.get(received.size() - 1).getInteger(MigrationFields.VERSION.getName())
@@ -117,7 +120,7 @@ public class MigrationService {
 			versionsCollection.insertOne(migration.toVersionEntry()).subscribe(insertSubscriber);
 			insertSubscriber.await();
 
-			logger.info("Successfully applied migration: {}{}{}", migration.getVersion(), VERSION_NAME_DELIMITER, migration.getName());
+			logger.info("Successfully applied migration: V{}{}{}", migration.getVersion(), VERSION_NAME_DELIMITER, migration.getName());
 		}
 		if (!newMigrations.isEmpty()) {
 			logger.info("{} new migrations have been applied", newMigrations.size());
