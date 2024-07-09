@@ -13,9 +13,12 @@ import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ResourceUtils;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -40,18 +43,19 @@ public class MigrationService {
 	@Autowired
 	public MigrationService(ConfigurationProvider config) {
 		this.config = config;
-		try (var client = MongoClients.create(config.getUrl())) {
-			this.database = client.getDatabase(config.getDatabase());
-		}
+		this.database = MongoClients.create(config.getUrl()).getDatabase(config.getDatabase());
 	}
 
 	public void startMigrations() throws Throwable {
 		if (isDatabaseClean()) {
 			initializeVersionTable();
 		}
-		var location = new File(config.getLocation());
-		var files = Optional.ofNullable(location.listFiles()).orElse(new File[0]);
-		var migrations = Arrays.stream(files).toList();
+		var locationPath = config.getLocation();
+		var resources = new PathMatchingResourcePatternResolver()
+				.getResources(locationPath + (locationPath.endsWith("/") ? "*" : "/*"));
+		var migrations = Arrays.stream(resources)
+				.map(resource -> { try { return resource.getFile(); } catch (IOException e) { throw new RuntimeException(e); } })
+				.toList();
 		processMigrations(migrations);
 	}
 
