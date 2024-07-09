@@ -19,6 +19,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import static com.mongodb.client.model.Sorts.ascending;
 import static io.jynx.migrator.service.model.Migration.VERSION_NAME_DELIMITER;
@@ -29,7 +30,7 @@ public class MigrationService {
 
 	public static final Logger logger = LoggerFactory.getLogger(MigrationService.class);
 	private static final String MIGRATION_VALIDATION_ERROR = "Exception occurred while validating migrations";
-	private static final String MIGRATION_MISMATCH_ERROR = "Invalid migrations present, database version mismatch with present migrations";
+	private static final String MIGRATION_MISMATCH_ERROR = "Invalid migrations present, database version mismatch with present migration files";
 	private static final String MIGRATION_CHECKSUM_ERROR = "Failed to validate migration checksum: %s";
 	private static final String VERSIONS_COLLECTION = "jynx_version_history";
 
@@ -39,7 +40,9 @@ public class MigrationService {
 	@Autowired
 	public MigrationService(ConfigurationProvider config) {
 		this.config = config;
-		this.database = MongoClients.create(config.getUrl()).getDatabase(config.getDatabase());
+		try (var client = MongoClients.create(config.getUrl())) {
+			this.database = client.getDatabase(config.getDatabase());
+		}
 	}
 
 	public void startMigrations() throws Throwable {
@@ -47,7 +50,8 @@ public class MigrationService {
 			initializeVersionTable();
 		}
 		var location = new File(config.getLocation());
-		var migrations = Arrays.stream(location.listFiles()).toList();
+		var files = Optional.ofNullable(location.listFiles()).orElse(new File[0]);
+		var migrations = Arrays.stream(files).toList();
 		processMigrations(migrations);
 	}
 

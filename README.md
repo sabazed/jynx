@@ -59,4 +59,5 @@ Use the release you wish to install instead of `version`
 
 ## Disclaimer
 
-This product has not been thoroughly tested. Use it at your own risk. Always back up your data before performing migrations.
+This product has not been thoroughly tested. Use it at your own risk. Always back up your data before performing migrations. 
+**Use at your own risk**.
