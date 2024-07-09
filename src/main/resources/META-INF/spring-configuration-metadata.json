@@ -17,8 +17,7 @@
       "name": "jynx.migrator.mongodb.location",
       "type": "java.lang.String",
       "description": "Directory from the root where the migrations will be places",
-      "sourceType": "io.jynx.migrator.service.ConfigurationProvider",
-      "defaultValue": "src\/main\/resources\/db\/migration\/mongo"
+      "sourceType": "io.jynx.migrator.service.ConfigurationProvider"
     },
     {
       "name": "jynx.migrator.mongodb.url",

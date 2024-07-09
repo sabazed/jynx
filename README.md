@@ -28,7 +28,7 @@ Add the following properties to your `application.properties` file to configure 
 ``` properties
 jynx.migrator.mongodb.url=mongodb://user:pass@localhost:port/db
 jynx.migrator.mongodb.database=db
-jynx.migrator.mongodb.location=src/main/resources/db/migration/mongo
+jynx.migrator.mongodb.location=classpath:/db/migration/mongo
 ```
 
 ## Usage

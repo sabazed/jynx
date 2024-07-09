@@ -2,12 +2,11 @@ package io.jynx.migrator.service.model;
 
 
 import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
+import com.google.common.io.ByteSource;
 import io.jynx.migrator.exception.MigrationException;
 import org.bson.Document;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 import static io.jynx.migrator.service.MigrationService.logger;
@@ -25,7 +24,7 @@ public class Migration {
 	private final Document content;
 	private final String checksum;
 
-	public Migration(String fileName, Path filePath, String migration) {
+	public Migration(String fileName, String migration) {
 		// Validate name and content
 		validateFileName(fileName);
 		var delimiterIndex = fileName.indexOf(VERSION_NAME_DELIMITER);
@@ -36,9 +35,9 @@ public class Migration {
 			logger.error(MIGRATION_INVALID_VERSION, version);
 			throw new MigrationException(e);
 		}
-		this.content = Document.parse(migration);
 		this.name = fileName.substring(delimiterIndex + 2);
-		this.checksum = calculateHash(filePath);
+		this.content = Document.parse(migration);
+		this.checksum = calculateHash(migration);
 	}
 
 	public String getName() {
@@ -64,9 +63,9 @@ public class Migration {
 		}
 	}
 
-	private String calculateHash(Path filePath) {
+	private String calculateHash(String content) {
 		try {
-			var byteSource = Files.asByteSource(filePath.toFile());
+			var byteSource = ByteSource.wrap(content.getBytes());
 			return byteSource.hash(Hashing.sha256()).toString();
 		} catch (IOException e) {
 			throw new RuntimeException(e);

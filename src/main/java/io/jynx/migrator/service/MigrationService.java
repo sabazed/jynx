@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.stereotype.Service;
-import org.springframework.util.ResourceUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +22,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static com.mongodb.client.model.Sorts.ascending;
 import static io.jynx.migrator.service.model.Migration.VERSION_NAME_DELIMITER;
@@ -51,21 +51,22 @@ public class MigrationService {
 		if (isDatabaseClean()) {
 			initializeVersionTable();
 		}
-		processMigrations(getMigrationFiles());
+		var migrations = getMigrations()
+				.sorted(Comparator.comparingInt(Migration::getVersion))
+				.toList();
+		processMigrations(migrations);
 	}
 
-	private List<File> getMigrationFiles() throws IOException {
+	private Stream<Migration> getMigrations() throws IOException {
 		var locationPath = config.getLocation();
 		if (locationPath.startsWith(CLASSPATH_PREFIX)) {
 			var resources = new PathMatchingResourcePatternResolver()
 					.getResources(locationPath + (locationPath.endsWith("/") ? "*" : "/*"));
-			return Arrays.stream(resources)
-					.map(resource -> { try { return resource.getFile(); } catch (IOException e) { throw new RuntimeException(e); } })
-					.toList();
+			return Arrays.stream(resources).map(MigrationHelper::getMigration);
 		}
 		var location = new File(locationPath);
 		var files = Optional.ofNullable(location.listFiles()).orElse(new File[0]);
-		return Arrays.stream(files).toList();
+		return Arrays.stream(files).map(MigrationHelper::getMigration);
 	}
 
 	private boolean isDatabaseClean() {
@@ -86,12 +87,7 @@ public class MigrationService {
 		subscriber.await();
 	}
 
-	private void processMigrations(List<File> migrationFiles) throws Throwable {
-		var migrations = migrationFiles.stream()
-				.map(MigrationHelper::getMigration)
-				.sorted(Comparator.comparingInt(Migration::getVersion))
-				.toList();
-
+	private void processMigrations(List<Migration> migrations) throws Throwable {
 		var versionsCollection = database.getCollection(VERSIONS_COLLECTION);
 
 		var versionsSubscriber = new DatabaseSubscriber<Document>();
