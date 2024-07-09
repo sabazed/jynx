@@ -36,6 +36,7 @@ public class MigrationService {
 	private static final String MIGRATION_MISMATCH_ERROR = "Invalid migrations present, database version mismatch with present migration files";
 	private static final String MIGRATION_CHECKSUM_ERROR = "Failed to validate migration checksum: %s";
 	private static final String VERSIONS_COLLECTION = "jynx_version_history";
+
 	private static final String CLASSPATH_PREFIX = "classpath:";
 
 	private final ConfigurationProvider config;
