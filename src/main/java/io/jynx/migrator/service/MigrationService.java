@@ -36,6 +36,7 @@ public class MigrationService {
 	private static final String MIGRATION_MISMATCH_ERROR = "Invalid migrations present, database version mismatch with present migration files";
 	private static final String MIGRATION_CHECKSUM_ERROR = "Failed to validate migration checksum: %s";
 	private static final String VERSIONS_COLLECTION = "jynx_version_history";
+	private static final String CLASSPATH_PREFIX = "classpath:";
 
 	private final ConfigurationProvider config;
 	private final MongoDatabase database;
@@ -50,13 +51,21 @@ public class MigrationService {
 		if (isDatabaseClean()) {
 			initializeVersionTable();
 		}
+		processMigrations(getMigrationFiles());
+	}
+
+	private List<File> getMigrationFiles() throws IOException {
 		var locationPath = config.getLocation();
-		var resources = new PathMatchingResourcePatternResolver()
-				.getResources(locationPath + (locationPath.endsWith("/") ? "*" : "/*"));
-		var migrations = Arrays.stream(resources)
-				.map(resource -> { try { return resource.getFile(); } catch (IOException e) { throw new RuntimeException(e); } })
-				.toList();
-		processMigrations(migrations);
+		if (locationPath.startsWith(CLASSPATH_PREFIX)) {
+			var resources = new PathMatchingResourcePatternResolver()
+					.getResources(locationPath + (locationPath.endsWith("/") ? "*" : "/*"));
+			return Arrays.stream(resources)
+					.map(resource -> { try { return resource.getFile(); } catch (IOException e) { throw new RuntimeException(e); } })
+					.toList();
+		}
+		var location = new File(locationPath);
+		var files = Optional.ofNullable(location.listFiles()).orElse(new File[0]);
+		return Arrays.stream(files).toList();
 	}
 
 	private boolean isDatabaseClean() {
