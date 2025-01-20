@@ -15,7 +15,7 @@ import static io.jynx.migrator.service.MigrationService.logger;
 public class Migration {
 
 	public static final String VERSION_NAME_DELIMITER = "__";
-	private static final Pattern NAME_PATTERN = Pattern.compile("^V[0-9.]{1,6}__[a-zA-Z][a-zA-Z0-9_]{0,29}.json$");
+	private static final Pattern NAME_PATTERN = Pattern.compile("^V[0-9.]{1,6}__[a-zA-Z][a-zA-Z0-9_]{0,49}.json$");
 	private static final String MIGRATION_INVALID_VERSION = "Migration found with an invalid version {}";
 	private static final String MIGRATION_INVALID_NAME = "Migration has invalid name: {}";
 
